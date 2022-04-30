@@ -6,7 +6,7 @@ The user must need to signup first to avail the service.For that I have made use
 ### Screenshot
 <img width="1434" alt="Screenshot 2022-04-30 at 1 24 47 PM" src="https://user-images.githubusercontent.com/61861303/166100611-7ab8ae24-bbf2-485b-aec8-e078f5c37377.png">
 
-###Demo Video
+### Demo Video
 https://www.loom.com/share/bf849c47fc0a41f999ea7e673d2e0d58
 
 This app was built using [appwrite](https://appwrite.io/docs) 🚀

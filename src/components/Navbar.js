@@ -25,10 +25,7 @@ const Navbar = () => {
             component="div"
             sx={{ mr: 2, display: { xs: "none", md: "flex" } }}
           >
-            <img
-              src={require("../img.png")}
-              style={{ width: "70px", height: "60px" }}
-            />
+            <h2>CSV Import</h2>
           </Typography>
 
           <Box sx={{ flexGrow: 1, display: { xs: "none", md: "flex" } }}>

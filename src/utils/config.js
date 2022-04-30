@@ -7,5 +7,6 @@ sdk
   .setProject(process.env.REACT_APP_PROJECT); // Your project ID
 
 const account = sdk.account;
+const database = sdk.database;
 
-export default account;
+export { account, database };

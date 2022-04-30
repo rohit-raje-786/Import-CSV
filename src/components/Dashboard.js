@@ -2,22 +2,23 @@ import { Alert, Button, Container } from "@mui/material";
 import React, { useState, useEffect } from "react";
 import { createWorker } from "tesseract.js";
 
-import account from "../utils/config";
+import { account, database } from "../utils/config";
 import { useNavigate } from "react-router-dom";
 import AppBar from "@mui/material/AppBar";
 import Box from "@mui/material/Box";
 import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
 
-const pages = ["Home", "Logout", "Delete My Account"];
+import { ExcelRenderer } from "react-excel-renderer";
 
 function Dashboard() {
   const [userDetails, setUserDetails] = useState("");
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [text, setText] = useState(null);
-  const [msg, setMessage] = useState("Extract");
-  const [isCopied, setIsCopied] = useState(false);
+
+  const [msg, setMessage] = useState("Import to Appwrite DB");
+
   const [err, setErr] = useState("");
+  const [rows, setRows] = useState([[]]);
+  const [cols, setCols] = useState([]);
   let navigate = useNavigate();
 
   const worker = createWorker({
@@ -50,7 +51,7 @@ function Dashboard() {
     e.preventDefault();
     try {
       await account.deleteSession("current");
-      navigate("/");
+      navigate("/signin");
     } catch (e) {
       console.log(e);
     }
@@ -67,54 +68,49 @@ function Dashboard() {
   };
 
   const fileChange = (e) => {
-    setErr("");
-    console.log(e.target.files[0].type.split("/")[0]);
-    if (e.target.files[0].type.split("/")[0] != "image") {
-      setErr("Only Image files are supported");
-    } else {
-      setErr("no");
-      setSelectedFile(e.target.files[0]);
-    }
+    ExcelRenderer(e.target.files[0], (err, resp) => {
+      if (err) {
+        setErr(err);
+      } else {
+        let col = resp.rows[0];
+        let rows = resp.rows;
+        col.splice(0, 1);
+        setCols(col);
+        for (let i = 1; i < rows.length; i++) {
+          rows[i].splice(0, 1);
+        }
+        rows.splice(0, 1);
+        setRows(rows);
+        setErr("no");
+      }
+    });
   };
 
-  const fileUpload = async () => {
-    try {
-      setMessage("Extracting...");
-      await worker.load();
-      await worker.loadLanguage("eng");
-      await worker.initialize("eng");
-      const {
-        data: { text },
-      } = await worker.recognize(selectedFile);
-      setText(text);
-      console.log(text);
-      await worker.terminate();
-      setMessage("Extract");
-    } catch (e) {
-      console.log(e);
-    }
-  };
-
-  const handleCopyClick = () => {
-    // Asynchronously call copyTextToClipboard
-    copyTextToClipboard(text)
-      .then(() => {
-        // If successful, update the isCopied state value
-        setIsCopied(true);
-        setTimeout(() => {
-          setIsCopied(false);
-        }, 2000);
-      })
-      .catch((err) => {
-        console.log(err);
-      });
-  };
-  const textChange = (e) => {
+  const fileUpload = async (e) => {
     e.preventDefault();
-    if (e.target.value.length != 0) {
-      setText(e.target.value);
+    setMessage("Importing...");
+    for (let i = 0; i < rows.length; i++) {
+      let data = {};
+      for (let j = 0; j < rows[i].length; j++) {
+        data[cols[j].toLowerCase().replace(" ", "")] = rows[i][j];
+      }
+
+      await database
+        .createDocument(
+          process.env.REACT_APP_COLLECTION_ID,
+          "unique()",
+          data,
+          ["role:all"],
+          [`user:${process.env.REACT_APP_USER_ID}`]
+        )
+        .then((res) => {
+          console.log(res);
+          setMessage("Imported");
+        })
+        .catch((e) => console.log(e));
     }
   };
+
   return (
     <div>
       <AppBar position="static">
@@ -126,10 +122,7 @@ function Dashboard() {
               component="div"
               sx={{ mr: 2, display: { xs: "none", md: "flex" } }}
             >
-              <img
-                src={require("../img.png")}
-                style={{ width: "70px", height: "60px" }}
-              />
+              <h2>CSV Import</h2>
             </Typography>
 
             <Box sx={{ flexGrow: 1, display: { xs: "none", md: "flex" } }}>
@@ -164,6 +157,30 @@ function Dashboard() {
               <input type="file" onChange={fileChange} className="inputfile" />
             </div>
             <br />
+            <br />
+            {cols.length > 0 && rows.length > 0 && (
+              <table className="styled-table">
+                <thead>
+                  <tr>
+                    {cols.map((c, i) => (
+                      <th key={i}>{c}</th>
+                    ))}
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {rows.map((r, i) => (
+                    <tr key={i}>
+                      {r.map((d, j) => (
+                        <td key={j}>{d}</td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+            <br />
+
             {err.length > 0 && err != "no" ? (
               <Alert severity="error">{err}</Alert>
             ) : (
@@ -177,42 +194,6 @@ function Dashboard() {
             ) : (
               <></>
             )}
-
-            <br />
-            <br />
-            {text ? (
-              <textarea rows="19" cols="100" onChange={textChange}>
-                {text}
-              </textarea>
-            ) : (
-              <></>
-            )}
-
-            <br />
-            <br />
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-
-                alignItems: "center",
-              }}
-            >
-              {text ? (
-                <>
-                  <Button variant="contained" onClick={handleCopyClick}>
-                    {isCopied ? "Copied" : "Copy to ClipBoard"}
-                  </Button>
-                  <br />
-                  <Button variant="contained" onClick={() => setText("")}>
-                    Clear
-                  </Button>
-                </>
-              ) : (
-                <></>
-              )}
-              <br />
-            </div>
           </Container>
         </div>
       ) : (

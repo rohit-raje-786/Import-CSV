@@ -12,11 +12,12 @@ import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { account } from "../utils/config";
 import { useNavigate } from "react-router-dom";
 import { Alert } from "@mui/material";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 const theme = createTheme();
 
 function ForgotPassword() {
+  const [err, setErr] = useState();
   let navigate = useNavigate();
   let urlSearchParams = new URLSearchParams(window.location.search);
   let secret = urlSearchParams.get("secret");
@@ -29,6 +30,7 @@ function ForgotPassword() {
         data.get("email"),
         "http://localhost:3000/passwordrecovery"
       );
+      setErr("Email Send Succesfully");
       console.log("Email Send Succesfully");
     } catch (e) {
       console.log(e);
@@ -75,6 +77,7 @@ function ForgotPassword() {
               >
                 Send Email
               </Button>
+              {err ? <Alert severity="success">{err}</Alert> : <></>}
             </Box>
           </Box>
         </Container>

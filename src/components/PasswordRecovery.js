@@ -12,12 +12,13 @@ import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { account } from "../utils/config";
 import { useNavigate } from "react-router-dom";
 import { Alert } from "@mui/material";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 const theme = createTheme();
 
 function PasswordRecovery() {
   let navigate = useNavigate();
+  const [err, setErr] = useState();
   let urlSearchParams = new URLSearchParams(window.location.search);
   let secret = urlSearchParams.get("secret");
   let userId = urlSearchParams.get("userId");
@@ -39,8 +40,8 @@ function PasswordRecovery() {
           data.get("password"),
           data.get("confirmpassword")
         )
-        .then(() => console.log("Password Reset"))
-        .catch((e) => console.log("Unable to reset password"));
+        .then(() => navigate("/signin"))
+        .catch((e) => setErr(e.message));
     } catch (e) {
       console.log(e);
     }
@@ -99,6 +100,7 @@ function PasswordRecovery() {
               >
                 Reset Password
               </Button>
+              {err ? <Alert severity="error">{err}</Alert> : <></>}
             </Box>
           </Box>
         </Container>
